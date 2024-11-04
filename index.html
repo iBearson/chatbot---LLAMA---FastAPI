@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #e9ecef;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #343a40;
+        }
+        #container {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 600px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        #chatbox {
+            border: 1px solid #898c8f;
+            padding: 10px;
+            border-radius: 5px;
+            height: 400px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            margin-bottom: 10px;
+        }
+        #inputContainer {
+            display: flex;
+            width: 100%;
+        }
+        #userInput {
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            padding: 10px;
+            width: calc(100% - 110px);
+        }
+        #sendButton {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s;
+            margin-left: 10px; /* Space between buttons and input */
+        }
+        #sendButton:hover {
+            background-color: #0056b3;
+        }
+        #resetButton {
+            padding: 10px 13px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ff0000;
+            color: white;
+            transition: background-color 0.3s;
+            margin-left: 10px; /* Space between buttons and input */
+        }
+        #resetButton:hover {
+            background-color: #b30000;
+        }
+        .message {
+            margin: 5px 0;
+            padding: 8px 12px;
+            border-radius: 5px;
+            max-width: 80%;
+            display: inline-block;
+        }
+        .message-container {
+            display: flex;
+            justify-content: flex-start; /* Default to left */
+        }
+        .user {
+            background-color: #007bff;
+            color: white;
+            margin-left: auto; /* Align user messages to the right */
+        }
+        .bot {
+            background-color: #28a745;
+            color: white;
+        }
+        .reset-notification {
+            color: red;
+            font-weight: bold;
+            text-align: center;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="container">
+        <h1 style="text-align: center;">Chatbot</h1>
+        <div id="chatbox"></div>
+        <div id="inputContainer">
+            <input type="text" id="userInput" placeholder="Type your message here..." />
+            <button id="sendButton">Send</button>
+            <button id="resetButton">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        async function sendChatRequest(userInput, resetContext = false) {
+            const response = await fetch('http://127.0.0.1:8000/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_input: userInput,
+                    reset_context: resetContext
+                }),
+            });
+            const data = await response.json();
+            return data.bot_response;
+        }
+    
+        document.getElementById('sendButton').addEventListener('click', async () => {
+            const userInput = document.getElementById('userInput').value;
+            if (userInput.trim() === "") return;
+
+            const chatbox = document.getElementById('chatbox');
+            chatbox.innerHTML += `<div class="message-container"><div class="message user">${userInput}</div></div>`;
+
+            const botResponse = await sendChatRequest(userInput);
+            chatbox.innerHTML += `<div class="message-container"><div class="message bot">${botResponse}</div></div>`;
+
+            document.getElementById('userInput').value = ""; // Clear input after sending
+            chatbox.scrollTop = chatbox.scrollHeight;  // Auto-scroll to the latest message
+        });
+
+        document.getElementById('resetButton').addEventListener('click', async () => {
+            const response = await fetch('http://127.0.0.1:8000/reset', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+            const data = await response.json();
+            document.getElementById('chatbox').innerHTML += `<div class="message reset-notification">${data.message}</div>`;
+            document.getElementById('chatbox').innerHTML += `<div class="message-container"><div class="message bot">${data.introduction}</div></div>`;
+            document.getElementById('userInput').value = ""; // Clear the input box after reset
+            document.getElementById('chatbox').scrollTop = chatbox.scrollHeight;  // Auto-scroll to the latest message
+        });
+    </script>
+    
+</body>
+</html>
